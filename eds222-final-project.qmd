@@ -1,0 +1,80 @@
+---
+title: "EDS 222: Final Project"
+author: "Carmen Hoyt"
+date: last-modified
+editor_options: 
+  chunk_output_type: console
+execute:
+  warning: false
+  messages: false
+format:
+  html:
+      toc: true
+      code-fold: true
+---
+
+# Import packages
+```{r}
+# Load required packages
+library(tidyverse)
+library(here)
+library(janitor)
+```
+
+# Investigation
+
+To understand the relationship between the cost of damage and max wind speed and rainfall of hurricanes in Florida (and how it has changed over time).
+
+H0: Hurricanes are not increasing in cost, wind speed, or rainfall.
+HA: Hurricnaes are increase in cost, wind speed, and rainfall. 
+
+```{r}
+# Import hurricane data
+hurricane_data <- read_csv(here("data", "Hurricane Data.csv")) %>%
+  clean_names()
+
+# Filter for Florida hurricanes
+florida_hurricanes <- hurricane_data %>%
+  filter((str_detect(affected_areas, "Florida")))
+```
+
+```{r}
+ggplot(florida_hurricanes, aes(x = factor(category), y = damage_usd)) +
+  geom_boxplot()
+
+wind_model <- lm(damage_usd ~ highest_wind_speed, data = florida_hurricanes)
+summary(wind_model)
+print(paste("The R2 for damage~wind is", round(summary(wind_model)$r.squared, 2)))
+
+ggplot(florida_hurricanes, aes(x = highest_wind_speed, y = damage_usd, color = factor(category))) +
+  geom_point(aes(size = factor(category))) +
+  labs(x = "Max Wind Speed (mph)",
+       y = "Damage (USD)",
+       title = "Damage vs. Max Wind Speed",
+       color = "Category") +
+  #scale_color_manual(values = c("red", "orange", "yellow", "green", "blue", "purple")) +
+  scale_color_brewer(palette = "Reds")
+  theme_minimal()
+  
+rain_model <- lm(damage_usd ~ rain_inch, data = florida_hurricanes)
+summary(rain_model)
+print(paste("The R2 for damage~rain is", round(summary(rain_model)$r.squared, 2)))
+
+ggplot(florida_hurricanes, aes(x = rain_inch, y = damage_usd, color = factor(category))) +
+  geom_point(aes(size = factor(category))) +
+  labs(x = "Rainfall (in)",
+       y = "Damage (USD)",
+       title = "Damage vs. Rainfall",
+       color = "Category") +
+  #scale_color_manual(values = c("red", "orange", "yellow", "green", "blue", "purple")) +
+  scale_color_brewer(palette = "Reds")
+  theme_minimal()
+  
+combined_model <- lm(damage_usd ~ highest_wind_speed + rain_inch, data = florida_hurricanes)
+summary(combined_model)
+print(paste("The R2 for damage~wind+rain is", round(summary(combined_model)$adj.r.squared, 2)))
+
+
+```
+
+
