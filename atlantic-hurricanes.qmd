@@ -1,0 +1,237 @@
+---
+title: "Hurricanes in the Atlantic"
+author: "Carmen Hoyt"
+date: last-modified
+editor_options: 
+  chunk_output_type: console
+execute:
+  warning: false
+  messages: false
+format:
+  html:
+      toc: true
+      code-fold: true
+---
+
+# Hurricanes in the Atlantic
+
+An assessment of how the costs associated with hurricane damage in the Atlanic have changed over time, and the factors driving these costs.
+
+# Data
+
+I will be using Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/datasets/middlehigh/north-american-hurricanes-from-2000) to test the following hypothesis:
+
+- H0: Storm damage costs aren't changing over time.
+- HA: Storm damage costs are changing over time. 
+
+Of the factors driving damage costs...
+
+- H0: Rainfall has no effect on storm damage costs.
+- HA: Rainfall has an effect on storm damage costs.
+
+# Analysis
+
+Relevant sample statistic: regression coefficient
+
+## Import packages
+```{r}
+#| code-summary: Expand Code
+# Load required packages
+library(tidyverse)
+library(here)
+library(janitor)
+library(patchwork)
+```
+
+Remove NAs for damage? strongest storms? or just a few points?
+
+## Import data
+```{r}
+#| code-summary: Expand Code
+# Remove scientific notation
+options(scipen=999)
+
+# Import hurricane data
+hurricane_data <- read_csv(here("data", "Hurricane Data.csv")) %>%
+  clean_names()
+
+# Remove rows with NA values for damage costs?
+print(paste("There are", sum(is.na(hurricane_data$damage_usd)), "NA values associated with damage cost."))
+hurricane_data_cleaned <- hurricane_data[rowSums(is.na(hurricane_data)) == 0, ]
+  
+# Find total number of areas affected
+hurricane_data_cleaned <- hurricane_data_cleaned %>%
+  separate_longer_delim(affected_areas, ",") %>%
+  group_by(year, name, category, rain_inch, highest_wind_speed, damage_usd, fatalities) %>%
+  summarise(total_areas = n()) %>%
+  mutate(damage_mil = damage_usd/1000000)
+```
+
+## Visualize
+```{r}
+#| code-summary: Expand Code
+# Cost of damage by category
+ggplot(hurricane_data_cleaned, aes(x = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")), y = damage_mil)) +
+  geom_boxplot() +
+  labs(x = "Catetory",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Storm Damage by Category") +
+  theme_minimal()
+```
+
+```{r}
+# Cost of damage over time
+ggplot(hurricane_data_cleaned, aes(x = year, y = damage_mil)) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Storm Damage over Time") +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  theme_minimal()
+```
+
+## Linear Regression
+```{r}
+#| code-summary: Expand Code
+# Create the model
+damage_model <- lm(damage_mil ~ highest_wind_speed + rain_inch + year + total_areas, data = hurricane_data_cleaned)
+
+summary(damage_model)
+```
+
+### Wind
+Distribution of regression coefficient
+```{r}
+# Distribution of Beta1
+beta1_estimate <- summary(damage_model)$coefficients[2, 1]
+beta1_se <- summary(damage_model)$coefficients[2, 2]
+
+# Visualize
+tibble(beta1 = seq(-(beta1_estimate + beta1_se),
+                   beta1_estimate + beta1_se,
+                   length.out = 200),
+       density = dnorm(beta1, mean = 0, sd = beta1_se)) %>% 
+  ggplot(aes(beta1, density)) +
+  geom_line(color = "cornflowerblue") +
+  geom_vline(xintercept = beta1_estimate, color = "firebrick")
+
+# p-value
+pval_beta1 <- 2 * pnorm(-abs(beta1_estimate), mean = 0, sd = beta1_se)
+print(paste0("The p-value for beta 1 is: ", pval_beta1, "."))
+```
+
+### Rainfall
+Distribution of regression coefficient
+```{r}
+# Distribution of Beta1
+beta2_estimate <- summary(damage_model)$coefficients[3, 1]
+beta2_se <- summary(damage_model)$coefficients[3, 2]
+
+# Visualize
+tibble(beta2 = seq(-(beta2_estimate + beta2_se),
+                   beta2_estimate + beta2_se,
+                   length.out = 200),
+       density = dnorm(beta2, mean = 0, sd = beta2_se)) %>% 
+  ggplot(aes(beta2, density)) +
+  geom_line(color = "cornflowerblue") +
+  geom_vline(xintercept = beta2_estimate, color = "firebrick")
+
+# p-value
+pval_beta2 <- 2 * pnorm(-abs(beta2_estimate), mean = 0, sd = beta2_se)
+print(paste0("The p-value for beta 2 is: ", pval_beta2, "."))
+```
+
+### Year
+Distribution of regression coefficient
+```{r}
+# Distribution of Beta1
+beta3_estimate <- summary(damage_model)$coefficients[4, 1]
+beta3_se <- summary(damage_model)$coefficients[4, 2]
+
+# Visualize
+tibble(beta3 = seq(-(beta3_estimate + beta3_se),
+                   beta3_estimate + beta3_se,
+                   length.out = 200),
+       density = dnorm(beta3, mean = 0, sd = beta3_se)) %>% 
+  ggplot(aes(beta3, density)) +
+  geom_line(color = "cornflowerblue") +
+  geom_vline(xintercept = beta3_estimate, color = "firebrick")
+
+# p-value
+pval_beta3 <- 2 * pnorm(-abs(beta3_estimate), mean = 0, sd = beta3_se)
+print(paste0("The p-value for beta 3 is: ", pval_beta3, "."))
+```
+
+### Number of Places Affected
+Distribution of regression coefficient
+```{r}
+# Distribution of Beta1
+beta4_estimate <- summary(damage_model)$coefficients[5, 1]
+beta4_se <- summary(damage_model)$coefficients[5, 2]
+
+# Visualize
+tibble(beta4 = seq(-(beta4_estimate + beta4_se),
+                   beta4_estimate + beta4_se,
+                   length.out = 200),
+       density = dnorm(beta4, mean = 0, sd = beta4_se)) %>% 
+  ggplot(aes(beta4, density)) +
+  geom_line(color = "cornflowerblue") +
+  geom_vline(xintercept = beta4_estimate, color = "firebrick")
+
+# p-value
+pval_beta4 <- 2 * pnorm(-abs(beta4_estimate), mean = 0, sd = beta4_se)
+print(paste0("The p-value for beta 4 is: ", pval_beta4, "."))
+```
+
+## Plots
+Wind:
+```{r}
+ggplot(hurricane_data_cleaned, aes(x = highest_wind_speed, y = damage_mil)) +
+  geom_point() +
+  geom_abline(intercept = coef(damage_model)[1],
+              slope = coef(damage_model)[2],
+              color = "blue") +
+  labs(x = "Max Wind Speed (mph)",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Storm Damage by Max Wind Speed") +
+  theme_minimal()
+```
+
+Rainfall:
+```{r}
+ggplot(hurricane_data_cleaned, aes(x = rain_inch, y = damage_mil)) +
+  geom_point() +
+  geom_abline(intercept = coef(damage_model)[1],
+              slope = coef(damage_model)[3],
+              color = "blue") +
+  labs(x = "Rainfall (in)",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Storm Damage by Rainfall") +
+  theme_minimal()
+```
+
+Year:
+```{r}
+ggplot(hurricane_data_cleaned, aes(x = year, y = damage_mil)) +
+  geom_point() +
+  geom_abline(intercept = coef(damage_model)[1],
+              slope = coef(damage_model)[4],
+              color = "blue") +
+  labs(x = "Year",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Storm Damage by Year") +
+  theme_minimal()
+```
+
+Number of Places:
+```{r}
+ggplot(hurricane_data_cleaned, aes(x = total_areas, y = damage_mil)) +
+  geom_point() +
+  geom_abline(intercept = coef(damage_model)[1],
+              slope = coef(damage_model)[5],
+              color = "blue") +
+  labs(x = "Number of Areas Affected",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Storm Damage by Areas") +
+  theme_minimal()
+```

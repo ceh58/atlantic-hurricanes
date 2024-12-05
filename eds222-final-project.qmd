@@ -15,10 +15,12 @@ format:
 
 # Import packages
 ```{r}
+#| code-summary: Expand Code
 # Load required packages
 library(tidyverse)
 library(here)
 library(janitor)
+library(patchwork)
 ```
 
 Goal: To understand how hurricanes affecting Florida have changed over time:
@@ -32,6 +34,7 @@ Goal: To understand how hurricanes affecting Florida have changed over time:
 
 # Import data
 ```{r}
+#| code-summary: Expand Code
 # Import hurricane data
 hurricane_data <- read_csv(here("data", "Hurricane Data.csv")) %>%
   clean_names()
@@ -46,6 +49,7 @@ florida_hurricanes <- hurricane_data %>%
 
 ## Visualize
 ```{r}
+#| code-summary: Damage by Category
 # Cost of damage by category
 ggplot(florida_hurricanes, aes(x = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")), y = damage_mil)) +
   geom_boxplot() +
@@ -55,45 +59,29 @@ ggplot(florida_hurricanes, aes(x = factor(category, levels = c("TS", "Category 1
   theme_minimal()
 ```
 
-# 2.
+# 2. What is driving the total cost of storm damage?
 
-Hypothesis:
+## Hypothesis: Wind Speed
 
 - H0: Max wind speed does not have an effect on damage costs.
-- Ha: Max wind speed does have an effect on damage costs
+- HA: Max wind speed does have an effect on damage costs
 
-Relevant sample statistic: regression coefficient (Beta1?)
-
-Plot the data:
+Relevant sample statistic: regression coefficient (Beta1)
 ```{r}
-ggplot(florida_hurricanes, aes(x = highest_wind_speed, y = damage_mil)) +
+#| code-summary: Damage ~ Wind Speed
+normal <- ggplot(florida_hurricanes, aes(x = highest_wind_speed, y = damage_mil)) +
   geom_point() +
   labs(x = "Max Wind Speed (mph)",
        y = "Damage (Millions of USD)",
        title = "Storm Damage by Wind") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) +
   theme_minimal()
-```
 
-Log damage:
-```{r}
-ggplot(florida_hurricanes, aes(x = highest_wind_speed, y = log(damage_mil))) +
-  geom_point() +
-  labs(x = "Max Wind Speed (mph)",
-       y = "Log Damage (Millions of USD)",
-       title = "Log Storm Damage by Wind") +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) +
-  theme_minimal()
-```
-
-Linear regression:
-```{r}
+# Linear regression
 wind_model <- lm(damage_mil ~ highest_wind_speed, data = florida_hurricanes)
 summary(wind_model)
-```
 
-Visualize the distribution of the regression coefficient (Beta1?) under the null hypothesis:
-```{r}
+# Distribution of Beta1
 beta1_estimate <- summary(wind_model)$coefficients[2, 1]
 beta1_se <- summary(wind_model)$coefficients[2, 2]
 tibble(beta1 = seq(-(beta1_estimate + beta1_se),
@@ -103,26 +91,43 @@ tibble(beta1 = seq(-(beta1_estimate + beta1_se),
   ggplot(aes(beta1, density)) +
   geom_line(color = "cornflowerblue") +
   geom_vline(xintercept = beta1_estimate, color = "firebrick")
-```
 
-p-value:
-```{r}
+# p-value
 pval_wind <- 2 * pnorm(-abs(beta1_estimate), mean = 0, sd = beta1_se)
-print(paste("The p-value is:", pval_wind))
+print(paste0("The p-value is: ", pval_wind, "."))
 ```
 
-The p-value is much less than 0.05, so we reject the null hypothesis. There is a very, very small chance (the p-value?) that the relationship is due to chance. Therefore, there is wind likely has an effect on the total cost of damage.
+The p-value is much less than 0.05, so we reject the null hypothesis. There is a very, very small chance that the relationship between wind and damage is due to chance. Therefore, the wind likely influences the total cost of damage.
 
-Remove outliers?
+```{r}
+#| code-summary: log(Damage) ~ Wind Speed
+log <- ggplot(florida_hurricanes, aes(x = highest_wind_speed, y = log(damage_mil))) +
+  geom_point() +
+  labs(x = "Max Wind Speed (mph)",
+       y = "Log Damage (Millions of USD)",
+       title = "Log Storm Damage by Wind") +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) +
+  theme_minimal()
+
+log_wind_model <- lm(log(damage_mil) ~ highest_wind_speed, data = florida_hurricanes)
+summary(log_wind_model)
+print(paste("The R2 for log(damage)~wind is", round(summary(log_wind_model)$r.squared, 2)))
+```
+
+Compare the plots:
+```{r}
+normal + log
+```
 
 Simulate population:
 ```{r}
-# Simulate the population
-# Extract our estimates for beta0, beta1, and sigma (i.e., the SD of the data
-# around the mean response)
+#| code-summary: Simulate the population
+# Extract our estimates for beta0, beta1, and sigma
 beta0_estimate <- summary(wind_model)$coefficients[1,1]
 beta1_estimate <- summary(wind_model)$coefficients[2,1]
 sigma <- summary(wind_model)$sigma
+
+# Simulate the population
 wind_damage_pop <- tibble(
   # Predictor (uniformly distributed)
   highest_wind_speed = runif(1e4, 
@@ -159,75 +164,49 @@ sample_ci <- c(point_estimate = pe,
                ci95_lower = pe - 1.96 * se,
                ci95_upper = pe + 1.96 * se)
 sample_ci
-print(paste("With 95% certainty, the wind coefficient would fall in the interval:", sample_ci[2], "to", sample_ci[3]))
+print(paste("With 95% certainty, the wind coefficient would \nfall in the interval:", sample_ci[2], "to", sample_ci[3]))
 ```
 
-How many 95% CIs contain the parameter?
-```{r}
-repeat_ci <- replicate(100, {
-  wind_damage_sample <- sample_n(wind_damage_pop, 21)
-  sample_lm <- lm(damage_usd ~ highest_wind_speed, wind_damage_pop)
-  pe <- summary(sample_lm)$coefficients[2, 1]
-  se <- summary(sample_lm)$coefficients[2, 2]
-  sample_ci <- c(point_estimate = pe,
-                 ci95_lower = pe - 1.96 * se,
-                 ci95_upper = pe + 1.96 * se)
-  sample_ci
-})
+<!-- How many 95% CIs contain the parameter? -->
+<!-- ```{r} -->
+<!-- repeat_ci <- replicate(100, { -->
+<!--   wind_damage_sample <- sample_n(wind_damage_pop, 21) -->
+<!--   sample_lm <- lm(damage_usd ~ highest_wind_speed, wind_damage_pop) -->
+<!--   pe <- summary(sample_lm)$coefficients[2, 1] -->
+<!--   se <- summary(sample_lm)$coefficients[2, 2] -->
+<!--   sample_ci <- c(point_estimate = pe, -->
+<!--                  ci95_lower = pe - 1.96 * se, -->
+<!--                  ci95_upper = pe + 1.96 * se) -->
+<!--   sample_ci -->
+<!-- }) -->
 
-tibble(point_estimate = repeat_ci[1, ],
-       ci95_lower = repeat_ci[2, ],
-       ci95_upper = repeat_ci[3, ],
-       ci = 1:100) %>% 
-  mutate(valid = beta1_estimate >= ci95_lower & 
-           beta1_estimate <= ci95_upper) %>% 
-  ggplot() +
-  geom_pointrange(aes(x = point_estimate, 
-                      xmin = ci95_lower,
-                      xmax = ci95_upper,
-                      y = ci,
-                      color = valid)) +
-  geom_vline(xintercept = beta1_estimate, color = "firebrick")
-```
+<!-- tibble(point_estimate = repeat_ci[1, ], -->
+<!--        ci95_lower = repeat_ci[2, ], -->
+<!--        ci95_upper = repeat_ci[3, ], -->
+<!--        ci = 1:100) %>%  -->
+<!--   mutate(valid = beta1_estimate >= ci95_lower &  -->
+<!--            beta1_estimate <= ci95_upper) %>%  -->
+<!--   ggplot() + -->
+<!--   geom_pointrange(aes(x = point_estimate,  -->
+<!--                       xmin = ci95_lower, -->
+<!--                       xmax = ci95_upper, -->
+<!--                       y = ci, -->
+<!--                       color = valid)) + -->
+<!--   geom_vline(xintercept = beta1_estimate, color = "firebrick") -->
+<!-- ``` -->
 
-Is this correct? ^
+<!-- Is this correct? ^ -->
 
-## Log Damage by Wind Speed -> a better model?
-```{r}
-# Log damage by wind speed
-ggplot(florida_hurricanes, aes(x = highest_wind_speed, 
-                               y = log(damage_mil), 
-                              )) +
-  geom_point() +
-  labs(x = "Max Wind Speed (mph)",
-       y = "Log Damage (Millions of USD)",
-       title = "Log Damage by Max Wind Speed",
-      ) +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) +
-  theme_minimal()
-
-log_wind_model <- lm(log(damage_mil) ~ highest_wind_speed, data = florida_hurricanes)
-summary(log_wind_model)
-print(paste("The R2 for log(damage)~wind is", round(summary(log_wind_model)$r.squared, 2)))
-
-florida_hurricanes %>% 
-  select(highest_wind_speed, damage_mil) %>% 
-  drop_na() %>% 
-  mutate(resid = resid(wind_model)) %>% 
-  ggplot(aes(highest_wind_speed, resid)) +
-  geom_point()
-```
-
-Hypothesis:
+## Hypothesis: Rainfall
 
 - H0: Max rainfall does not have an effect on damage costs.
 - Ha: Max rainfall does have an effect on damage costs
 
 Relevant sample statistic: regression coefficient (Beta1?)
 
-Plot the data:
 ```{r}
-ggplot(florida_hurricanes, aes(x = rain_inch, y = damage_mil)) +
+#| code-summary: Damage ~ Rainfall
+normal <- ggplot(florida_hurricanes, aes(x = rain_inch, y = damage_mil)) +
   geom_point() +
   labs(x = "Rainfall (in)",
        y = "Damage (Millions of USD)",
@@ -236,15 +215,24 @@ ggplot(florida_hurricanes, aes(x = rain_inch, y = damage_mil)) +
   theme_minimal()
 ```
 
-Log damage:
 ```{r}
-ggplot(florida_hurricanes, aes(x = rain_inch, y = log(damage_mil))) +
+#| code-summary: log(Damage) ~ Rainfall
+log <- ggplot(florida_hurricanes, aes(x = rain_inch, y = log(damage_mil))) +
   geom_point() +
   labs(x = "Rainfall (in))",
        y = "Log Damage (Millions of USD)",
        title = "Log Storm Damage by Rainfall") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) +
   theme_minimal()
+
+log_rain_model <- lm(log(damage_mil) ~ rain_inch, data = florida_hurricanes)
+summary(log_rain_model)
+print(paste("The R2 for log(damage)~rain is", round(summary(log_rain_model)$r.squared, 2)))
+```
+
+Plot the data:
+```{r}
+normal + log
 ```
 
 Linear regression:
@@ -352,33 +340,13 @@ tibble(point_estimate = repeat_ci[1, ],
 ```
 Is this correct? ^
 
-## Log Damage by Rainfall -> a better model?
+## Combined Model
 ```{r}
-# Log damage by wind speed
-ggplot(florida_hurricanes, aes(x = rain_inch, 
-                               y = log(damage_mil), 
-                              )) +
-  geom_point() +
-  labs(x = "Rainfall (in))",
-       y = "Log Damage (Millions of USD)",
-       title = "Log Damage by Rainfall",
-      ) +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 1.5) +
-  theme_minimal()
-
-log_rain_model <- lm(log(damage_mil) ~ rain_inch, data = florida_hurricanes)
-summary(log_rain_model)
-print(paste("The R2 for log(damage)~rain is", round(summary(log_rain_model)$r.squared, 2)))
-
-# florida_hurricanes %>% 
-#   select(rain_inch, damage_mil) %>% 
-#   drop_na() %>% 
-#   mutate(resid = resid(rain_model)) %>% 
-#   ggplot(aes(rain_inch, resid)) +
-#   geom_point() +
-  
+# Multiple linear regression
+combined_model <- lm(damage_mil ~ highest_wind_speed + rain_inch + category, data = florida_hurricanes)
+summary(combined_model)
+print(paste("The R2 for damage~wind+rain is", round(summary(combined_model)$adj.r.squared, 2)))
 ```
-
 
 
 
@@ -415,19 +383,6 @@ log_rain_model <- lm(log(damage_mil) ~ rain_inch, data = florida_hurricanes)
 summary(log_rain_model)
 print(paste("The R2 for log(damage)~wind is", round(summary(log_rain_model)$r.squared, 2)))
 ```
-
-## Combined Model
-```{r}
-# Multiple linear regression
-combined_model <- lm(damage_mil ~ highest_wind_speed + rain_inch + category, data = florida_hurricanes)
-summary(combined_model)
-print(paste("The R2 for damage~wind+rain is", round(summary(combined_model)$adj.r.squared, 2)))
-```
-
-
-
-
-
 
 ```{r}
 # Cost of damage by wind speed
@@ -524,12 +479,13 @@ ggplot(florida_hurricanes, aes(x = year, y = damage_mil, size = factor(category,
 
 ```{r}
 # Frequency of categories over time
-florida_hurricanes %>%
-  group_by(year) %>%
-  select(category) %>%
-  mutate(frequency = n()) %>%
-  ggplot(aes(x = year,
-             y = frequency, 
+test_freq <- florida_hurricanes %>%
+  group_by(year, category) %>%
+  summarise(obs_storms = n())
+
+
+ggplot(test_freq, aes(x = year,
+             y = obs_storms, 
              color = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")), 
              size = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")))) +
   geom_point() +
