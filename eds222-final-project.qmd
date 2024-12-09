@@ -546,3 +546,121 @@ ggplot(florida_hurricanes, aes(x = factor(category, levels = c("TS", "Category 1
   
 ```
 
+
+EXTRA WORK
+JUST TIME
+Damage ~ Time Linear Regression
+```{r}
+#| code-summary: Expand Code
+time_model <- lm(damage_mil ~ time, data = hurricane_data_cleaned)
+summary(time_model)
+```
+
+## Confidence Interval
+Investigate the `time` variable:
+```{r}
+#| code-summary: Expand Code
+# Histogram of time data
+ggplot(hurricane_data_cleaned, aes(time)) +
+  geom_histogram(bins = round(sqrt(length(hurricane_data_cleaned$time))), # set number of bins
+                 fill = "cornflowerblue", 
+                 color = "black") +
+  labs(x= "Years Since 2000",
+       y = "Number of Storms that Year",
+       title = "Distribution of Time Data") +
+  theme_minimal()
+
+ggsave("hist_time.jpg")
+```
+
+Simulate the population:
+```{r}
+#| code-summary: Expand Code
+# Extract our estimates for beta0, beta1, and sigma 
+beta0_estimate <- summary(time_model)$coefficients[1,1]
+beta1_estimate <- summary(time_model)$coefficients[2,1]
+sigma <- summary(time_model)$sigma
+time_damage_pop <- tibble(
+  # Predictor (uniformly distributed)
+  time = runif(1e4, 
+              min(hurricane_data_cleaned$time),
+              max(hurricane_data_cleaned$time)),
+  # Mean response
+  mean_damage_mil = beta0_estimate + beta1_estimate * time,
+  # Simulated response (mean and standard deviation accounted for)
+  damage_mil = rnorm(1e4, mean = mean_damage_mil, sd = sigma)
+)
+
+# Visualize
+ggplot(time_damage_pop, aes(time, damage_mil)) +
+  geom_point(shape = 21)
+```
+
+```{r}
+#| code-summary: Expand Code
+# Draw a sample
+time_damage_sample <- sample_n(time_damage_pop, 21)
+
+# Calculate the point estimate and standard error
+sample_lm <- lm(damage_mil ~ time, time_damage_pop)
+pe <- summary(time_model)$coefficients[2, 1]
+se <- summary(time_model)$coefficients[2, 2]
+
+# Construct the confidence interval
+sample_ci <- c(point_estimate = pe,
+               ci95_lower = pe - 1.96 * se,
+               ci95_upper = pe + 1.96 * se)
+
+#print(paste("With 95% certainty, the time coefficient would fall in the interval:", sample_ci[2], "to", sample_ci[3]))
+```
+With 95% certainty, Beta 1 would fall between -5.77 and 1095.50. This is a *very* wide confidence interval, but it makes sense given the range of values associated with the cost of damage. We will explore how this changes with the *log* of damage later on. 
+
+**CI for log of damage?**
+Damage ~ Time Linear Regression
+```{r}
+#| code-summary: Expand Code
+log_time_model <- lm(log(damage_mil) ~ time, data = hurricane_data_cleaned)
+summary(log_time_model)
+```
+
+## Confidence Interval
+
+Simulate the population:
+```{r}
+#| code-summary: Expand Code
+# Extract our estimates for beta0, beta1, and sigma 
+beta0_estimate <- exp(summary(log_time_model)$coefficients[1,1])
+beta1_estimate <- exp(summary(log_time_model)$coefficients[2,1])
+sigma <- exp(summary(log_time_model)$sigma)
+log_time_damage_pop <- tibble(
+  # Predictor (uniformly distributed)
+  time = runif(1e4, 
+              min(hurricane_data_cleaned$time),
+              max(hurricane_data_cleaned$time)),
+  # Mean response
+  mean_damage_mil = beta0_estimate + beta1_estimate * time,
+  # Simulated response (mean and standard deviation accounted for)
+  damage_mil = rnorm(1e4, mean = mean_damage_mil, sd = sigma)
+)
+
+# Visualize
+ggplot(log_time_damage_pop, aes(time, log(damage_mil))) +
+  geom_point(shape = 21)
+```
+
+```{r}
+#| code-summary: Expand Code
+# Draw a sample
+log_time_damage_sample <- sample_n(log_time_damage_pop, 21)
+# Calculate the point estimate and standard error
+sample_lm <- lm(log(damage_mil) ~ time, log_time_damage_pop)
+pe <- exp(summary(time_model)$coefficients[2, 1])
+se <- exp(summary(time_model)$coefficients[2, 2])
+# Construct the confidence interval
+log_sample_ci <- c(point_estimate = pe,
+               ci95_lower = pe - 1.96 * se,
+               ci95_upper = pe + 1.96 * se)
+
+print(paste("With 95% certainty, the time coefficient would fall in the interval:", log_sample_ci[2], "to", log_sample_ci[3]))
+```
+
