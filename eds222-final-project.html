@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Carmen Hoyt">
-<meta name="dcterms.date" content="2024-12-05">
+<meta name="dcterms.date" content="2024-12-08">
 
 <title>EDS 222: Final Project</title>
 <style>
@@ -118,7 +118,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 5, 2024</p>
+      <p class="date">December 8, 2024</p>
     </div>
   </div>
   
@@ -376,18 +376,18 @@ lm(formula = damage_usd ~ highest_wind_speed, data = wind_damage_pop)
 
 Residuals:
    Min     1Q Median     3Q    Max 
--65741 -11748    166  11714  70054 
+-69145 -11775    -23  11796  60244 
 
 Coefficients:
                      Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept)        -16345.814    500.388  -32.67   &lt;2e-16 ***
-highest_wind_speed    267.246      4.155   64.32   &lt;2e-16 ***
+(Intercept)        -16240.207    498.751  -32.56   &lt;2e-16 ***
+highest_wind_speed    267.762      4.146   64.59   &lt;2e-16 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Residual standard error: 17510 on 9998 degrees of freedom
-Multiple R-squared:  0.2927,    Adjusted R-squared:  0.2926 
-F-statistic:  4137 on 1 and 9998 DF,  p-value: &lt; 2.2e-16</code></pre>
+Residual standard error: 17450 on 9998 degrees of freedom
+Multiple R-squared:  0.2944,    Adjusted R-squared:  0.2943 
+F-statistic:  4172 on 1 and 9998 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
 <p>Create confidence interval:</p>
@@ -408,14 +408,14 @@ F-statistic:  4137 on 1 and 9998 DF,  p-value: &lt; 2.2e-16</code></pre>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>point_estimate     ci95_lower     ci95_upper 
-      267.2457       259.1022       275.3892 </code></pre>
+      267.7619       259.6363       275.8876 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"With 95% certainty, the wind coefficient would </span><span class="sc">\n</span><span class="st">fall in the interval:"</span>, sample_ci[<span class="dv">2</span>], <span class="st">"to"</span>, sample_ci[<span class="dv">3</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "With 95% certainty, the wind coefficient would \nfall in the interval: 259.102241021694 to 275.389166832136"</code></pre>
+<pre><code>[1] "With 95% certainty, the wind coefficient would \nfall in the interval: 259.636270758324 to 275.887574254001"</code></pre>
 </div>
 </div>
 <!-- How many 95% CIs contain the parameter? -->
@@ -634,18 +634,18 @@ lm(formula = damage_usd ~ rain_inch, data = rain_damage_pop)
 
 Residuals:
    Min     1Q Median     3Q    Max 
--77857 -13259    -35  13290  86246 
+-81859 -13651    -40  13218  83327 
 
 Coefficients:
             Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept)  -1649.3      426.7  -3.865 0.000112 ***
-rain_inch      688.7       17.4  39.593  &lt; 2e-16 ***
+(Intercept)  -829.12     430.73  -1.925   0.0543 .  
+rain_inch     640.80      17.39  36.852   &lt;2e-16 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Residual standard error: 19860 on 9998 degrees of freedom
-Multiple R-squared:  0.1355,    Adjusted R-squared:  0.1355 
-F-statistic:  1568 on 1 and 9998 DF,  p-value: &lt; 2.2e-16</code></pre>
+Residual standard error: 19880 on 9998 degrees of freedom
+Multiple R-squared:  0.1196,    Adjusted R-squared:  0.1195 
+F-statistic:  1358 on 1 and 9998 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
 <p>Create confidence interval:</p>
@@ -666,14 +666,14 @@ F-statistic:  1568 on 1 and 9998 DF,  p-value: &lt; 2.2e-16</code></pre>
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>point_estimate     ci95_lower     ci95_upper 
-      688.7423       654.6472       722.8375 </code></pre>
+      640.8044       606.7228       674.8860 </code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"With 95% certainty, the rainfall coefficient would fall in the interval:"</span>, sample_ci[<span class="dv">2</span>], <span class="st">"to"</span>, sample_ci[<span class="dv">3</span>]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] "With 95% certainty, the rainfall coefficient would fall in the interval: 654.647190598291 to 722.837494949788"</code></pre>
+<pre><code>[1] "With 95% certainty, the rainfall coefficient would fall in the interval: 606.722812364647 to 674.886024943861"</code></pre>
 </div>
 </div>
 <p>How many 95% CIs contain the parameter?</p>
@@ -1017,23 +1017,24 @@ F-statistic: 4.795 on 1 and 43 DF,  p-value: 0.03401</code></pre>
 <details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Frequency of categories over time</span></span>
-<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>florida_hurricanes <span class="sc">%&gt;%</span></span>
-<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year) <span class="sc">%&gt;%</span></span>
-<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(category) <span class="sc">%&gt;%</span></span>
-<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">frequency =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
-<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> year,</span>
-<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> frequency, </span>
-<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="fu">factor</span>(category, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"Category 1"</span>, <span class="st">"Category 2"</span>, <span class="st">"Category 3"</span>, <span class="st">"Category 4"</span>, <span class="st">"Category 5"</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"1"</span>, <span class="st">"2"</span>, <span class="st">"3"</span>, <span class="st">"4"</span>, <span class="st">"5"</span>)), </span>
-<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">size =</span> <span class="fu">factor</span>(category, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"Category 1"</span>, <span class="st">"Category 2"</span>, <span class="st">"Category 3"</span>, <span class="st">"Category 4"</span>, <span class="st">"Category 5"</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"1"</span>, <span class="st">"2"</span>, <span class="st">"3"</span>, <span class="st">"4"</span>, <span class="st">"5"</span>)))) <span class="sc">+</span></span>
-<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
-<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Year"</span>,</span>
-<span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Frequency"</span>,</span>
-<span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Frequency of Categories over Time"</span>,</span>
-<span id="cb62-14"><a href="#cb62-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Category"</span>,</span>
-<span id="cb62-15"><a href="#cb62-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">size =</span> <span class="st">"Category"</span>) <span class="sc">+</span></span>
-<span id="cb62-16"><a href="#cb62-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Reds"</span>) <span class="sc">+</span></span>
-<span id="cb62-17"><a href="#cb62-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
-<span id="cb62-18"><a href="#cb62-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>test_freq <span class="ot">&lt;-</span> florida_hurricanes <span class="sc">%&gt;%</span></span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year, category) <span class="sc">%&gt;%</span></span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">obs_storms =</span> <span class="fu">n</span>())</span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(test_freq, <span class="fu">aes</span>(<span class="at">x =</span> year,</span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> obs_storms, </span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> <span class="fu">factor</span>(category, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"Category 1"</span>, <span class="st">"Category 2"</span>, <span class="st">"Category 3"</span>, <span class="st">"Category 4"</span>, <span class="st">"Category 5"</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"1"</span>, <span class="st">"2"</span>, <span class="st">"3"</span>, <span class="st">"4"</span>, <span class="st">"5"</span>)), </span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>             <span class="at">size =</span> <span class="fu">factor</span>(category, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"Category 1"</span>, <span class="st">"Category 2"</span>, <span class="st">"Category 3"</span>, <span class="st">"Category 4"</span>, <span class="st">"Category 5"</span>), <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"TS"</span>, <span class="st">"1"</span>, <span class="st">"2"</span>, <span class="st">"3"</span>, <span class="st">"4"</span>, <span class="st">"5"</span>)))) <span class="sc">+</span></span>
+<span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Year"</span>,</span>
+<span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Frequency"</span>,</span>
+<span id="cb62-14"><a href="#cb62-14" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Frequency of Categories over Time"</span>,</span>
+<span id="cb62-15"><a href="#cb62-15" aria-hidden="true" tabindex="-1"></a>       <span class="at">color =</span> <span class="st">"Category"</span>,</span>
+<span id="cb62-16"><a href="#cb62-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">size =</span> <span class="st">"Category"</span>) <span class="sc">+</span></span>
+<span id="cb62-17"><a href="#cb62-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_brewer</span>(<span class="at">palette =</span> <span class="st">"Reds"</span>) <span class="sc">+</span></span>
+<span id="cb62-18"><a href="#cb62-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"lm"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb62-19"><a href="#cb62-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output-display">
 <div>

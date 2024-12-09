@@ -1,5 +1,6 @@
 ---
 title: "Hurricanes in the Atlantic"
+subtitle: "An assessment of how the costs associated with hurricane damage have changed over time, and the factors driving these costs."
 author: "Carmen Hoyt"
 date: last-modified
 editor_options: 
@@ -12,48 +13,46 @@ format:
       toc: true
       code-fold: true
 ---
+
 # About
 
-An assessment of how the costs associated with hurricane damage in the Atlantic have changed over time, and the factors driving these costs.
-
-Growing up on the Gulf Coast of Florida, my family and I were no stranger to hurricanes. We have lived in the same house for over 20 years, but only recently have we seen consistent flooding and severe damage with each hurricane season[^1].
+Growing up on the Gulf Coast of Florida, my family and I were no stranger to hurricanes. We have lived in the same house for over 20 years, but we have seen consistent flooding and severe damage with more recent hurricane seasons[^1]. For example, Hurricane Ian (2022) stands out as having been the worst storm to hit our neighborhood in my lifetime, bringing with it over 7 feet of storm surge into our home. 
 
 [^1]: Hurricane season runs June 1 to November 30, but since 2021, the [National Hurricane Center (NHC) has considered moving the start date to May 15](https://www.accuweather.com/en/hurricane/nhc-considering-change-to-start-date-of-hurricane-season/1168271) to encompass increasing early-season activity.
 
-Hurricanes are assigned categories 1-5 on the Saffir-Simpson scale by wind speed[^1]. Storms given a rating of 3 or higher are considered "major hurricanes" and are expected to bring catastrophic damage.
+Hurricanes are assigned categories 1 through 5 on the Saffir-Simpson scale by wind speed[^1]. Storms given a rating of 3 or higher are considered "major hurricanes" and are expected to bring catastrophic damage (along with more significant damage costs).
 
 [^1]: Read more about the Saffir-Simpson scale [here](https://www.weather.gov/mfl/saffirsimpson#:~:text=The%20Saffir%2DSimpson%20Hurricane%20Wind,loss%20of%20life%20and%20damage.).
 
 # Data
 
-I will be using Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/datasets/middlehigh/north-american-hurricanes-from-2000) dataset to test the following hypothesis:
+I will be using Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/datasets/middlehigh/north-american-hurricanes-from-2000) dataset to test the factors potentially driving storm damage costs, including `max wind speed`, `rainfall`, `time`, and the `number of places affected`. Of the factors potentially driving these damage costs:
 
-- H0: Storm damage costs aren't changing (increasing?) over time.
-- HA: Storm damage costs are changing (increasing?) over time. 
+**I predict that time has an effect on storm damage costs (increasing over time).**
 
-Factors potentially driving damage costs include max wind speed, rainfall, time (in years since 2000), and the number of places affected. Of the factors potentially driving these damage costs:
+- H0: Time has no effect on storm damage costs.
+- HA: Time has an effect on storm damage costs.
 
-- H0: Rainfall has no effect on storm damage costs.
-- HA: Rainfall has an effect on storm damage costs.
 
 **ADD?**
+
 - H0: The number of major hurricanes in the last 10 years hasn't changed as compared to the previous 10 years.
 - HA: The number of major hurricanes has increased in the last 10 years as compared to the previous 10 years.
 
-# Analysis
+# Analysis: Linear Regression
 
 **Relevant sample statistic:** regression coefficient
 
 **Predictor variables:**
 
-- max wind speed
-- rainfall
-- time
-- number of places affected
+- `max wind speed`: highest wind speed achieved by the storm (mph)
+- `rainfall`: rain that fell (inches)
+- `time`: years since 2000
+- `number of places affected`: a count of how many areas were listed in the `areas affected` variable
 
 **Response variable:**
 
-- damage costs
+- `damage costs`: cost of damage (scaled to millions of USD)
 
 **LOOK AT LOG DAMAGE?**
 
@@ -65,6 +64,7 @@ library(tidyverse)
 library(here)
 library(janitor)
 library(patchwork)
+library(kableExtra)
 ```
 
 ## Import data
@@ -78,28 +78,40 @@ hurricane_data <- read_csv(here("data", "Hurricane Data.csv")) %>%
   clean_names()
 ```
 
-### Inspect NA values for the response variable.
-
-What is the original breakdown of storms by category?
-```{r}
-hurricane_data %>%
-  group_by(category) %>%
-  summarise(count = n())
-```
-
+### Inspect NA values for the response variable
 How are the NA values for damage distributed by category?
 ```{r}
+#| code-summary: Expand Code
+# Total storms by category
+total_storms <- hurricane_data %>%
+  group_by(category) %>%
+  summarise(count = n()) %>%
+  rename(Category = category,
+         Count = count)
+
 print(paste("There are", sum(is.na(hurricane_data$damage_usd)), "NA values associated with damage cost."))
 
-# Check NA values for damage
-hurricane_data %>%
+# Check NA values for damage (by category)
+na_storms <- hurricane_data %>%
   filter(is.na(damage_usd))%>%
   group_by(category) %>%
-  summarise(count = n())
+  summarise(count = n()) %>%
+  rename(Category = category,
+         Count = count)
+
+left_join(total_storms, na_storms, by = "Category") %>%
+  rename("Total Storms" = Count.x,
+         "NA Damage" = Count.y) %>%
+  arrange(factor(Category, levels = c('TS', 'Category 1', 'Category 2', 'Category 3', 'Category 4', 'Category 5'))) %>%
+  kbl() %>%
+  kable_styling()
 ```
 
-It looks like NA values are associated with 11 TS, 1 Category 1, 1 Category 2, and 1 Category 4 storms. It appears that removing the NA values will not have a significant impact on the analysis. So, we will remove them. 
+It appears that removing the NA values will not have an impact on the analysis.
+
+I will scale the damage costs in the dataset down to be represented by Millions of USD.
 ```{r}
+#| code-summary: Expand Code
 # Remove rows with NA values for damage costs
 complete_df <- na.omit(hurricane_data)
 
@@ -108,6 +120,7 @@ hurricane_data_cleaned <- complete_df %>%
   separate_longer_delim(affected_areas, ",") %>%
   group_by(year, name, category, rain_inch, highest_wind_speed, damage_usd, fatalities) %>%
   summarise(total_areas = n()) %>%
+  # Scale down damage costs
   mutate(damage_mil = damage_usd/1000000,
          time = year - 2000)
 ```
@@ -118,46 +131,34 @@ hurricane_data_cleaned <- complete_df %>%
 # Cost of damage by category
 ggplot(hurricane_data_cleaned, aes(x = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")), y = damage_mil)) +
   geom_boxplot() +
-  labs(x = "Catetory",
+  labs(x = "Category",
        y = "Damage (Millions of USD)",
        title = "Cost of Storm Damage by Category 2000-2023") +
   theme_minimal()
 ```
+It appears that "major hurricanes" (categories 3-5) have higher damage costs than non-major hurricanes. However, there doesn't appear to be a significant difference between the medians while the range appears to be highest for category 5 storms.
 
+**SIGNIFICANCE TEST?** 
+JUST TIME
 ```{r}
 #| code-summary: Expand Code
-# Cost of damage over time
-ggplot(hurricane_data_cleaned, aes(x = time, y = highest_wind_speed)) +
+# Damage costs over time
+ggplot(hurricane_data_cleaned, aes(x = year, y = damage_mil)) +
   geom_point() +
-  labs(x = "Years since 2000",
-       y = "Max Wind Speed (mph)",
-       title = "Cost of Storm Damage over Time",
-       color = "Category") +
+  labs(x = "Year",
+       y = "Damage (Millions of USD)",
+       title = "Cost of Damage over Time") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
-  scale_color_brewer(palette = "Reds") +
   theme_minimal()
 ```
 
+Let's break that down by category.
 ```{r}
 #| code-summary: Expand Code
 # Cost of damage over time
-ggplot(hurricane_data_cleaned, aes(x = time, y = rain_inch)) +
+ggplot(hurricane_data_cleaned, aes(x = year, y = damage_mil, color = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")))) +
   geom_point() +
-  labs(x = "Years since 2000",
-       y = "Rainfall (in)",
-       title = "Cost of Storm Damage over Time",
-       color = "Category") +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
-  scale_color_brewer(palette = "Reds") +
-  theme_minimal()
-```
-
-```{r}
-#| code-summary: Expand Code
-# Cost of damage over time
-ggplot(hurricane_data_cleaned, aes(x = time, y = damage_mil, color = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")))) +
-  geom_point() +
-  labs(x = "Years since 2000",
+  labs(x = "Year",
        y = "Damage (Millions of USD)",
        title = "Cost of Storm Damage over Time",
        color = "Category") +
@@ -166,6 +167,40 @@ ggplot(hurricane_data_cleaned, aes(x = time, y = damage_mil, color = factor(cate
   theme_minimal()
 ```
 
+Since category 5 storms include wind speeds of 155+ mph, it is possible that increasing damage costs are associated with an increase in max wind speeds over time.
+```{r}
+#| code-summary: Expand Code
+# Wind speed over time
+ggplot(hurricane_data_cleaned, aes(x = year, y = highest_wind_speed)) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Max Wind Speed (mph)",
+       title = "Max Wind Speed over Time") +
+  geom_hline(yintercept =155,
+             linetype = "dashed",
+             color = "red") +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  theme_minimal()
+```
+You can see 9 category 5 storms (with 155+ winds) in just the last 9 years, as compared to just 4 between the years 2000-2015.
+
+So far we have `max wind speed` and `time` as potential factors driving the cost of storm damage. It is likely that there are a few more. Perhaps rainfall has an effect?
+
+*For example:*
+```{r}
+#| code-summary: Expand Code
+# Rainfall over time
+ggplot(hurricane_data_cleaned, aes(x = year, y = rain_inch)) +
+  geom_point() +
+  labs(x = "Year",
+       y = "Rainfall (in)",
+       title = "Rainfall over Time") +
+  geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
+  theme_minimal()
+```
+We will explore this more in the next section.
+
+JUST TIME
 Damage ~ Time Linear Regression
 ```{r}
 #| code-summary: Expand Code
@@ -180,10 +215,10 @@ Investigate the `time` variable:
 # Histogram of time data
 ggplot(hurricane_data_cleaned, aes(time)) +
   geom_histogram(bins = round(sqrt(length(hurricane_data_cleaned$time))), # set number of bins
-                 fill = "steelblue", 
+                 fill = "cornflowerblue", 
                  color = "black") +
   labs(x= "Years Since 2000",
-       y = "Count",
+       y = "Number of Storms that Year",
        title = "Distribution of Time Data") +
   theme_minimal()
 ```
@@ -215,30 +250,37 @@ ggplot(time_damage_pop, aes(time, damage_mil)) +
 #| code-summary: Expand Code
 # Draw a sample
 time_damage_sample <- sample_n(time_damage_pop, 21)
+
 # Calculate the point estimate and standard error
 sample_lm <- lm(damage_mil ~ time, time_damage_pop)
 pe <- summary(time_model)$coefficients[2, 1]
 se <- summary(time_model)$coefficients[2, 2]
+
 # Construct the confidence interval
 sample_ci <- c(point_estimate = pe,
                ci95_lower = pe - 1.96 * se,
                ci95_upper = pe + 1.96 * se)
 
-print(paste("With 95% certainty, the time coefficient would fall in the interval:", sample_ci[2], "to", sample_ci[3]))
+#print(paste("With 95% certainty, the time coefficient would fall in the interval:", sample_ci[2], "to", sample_ci[3]))
 ```
-**This is an outrageous CI.**
+With 95% certainty, Beta 1 would fall between -5.77 and 1095.50. This is a *very* wide confidence interval, but it makes sense given the range of values associated with the cost of damage. We will explore how this changes with the *log* of damage later on. 
 
-## Explore factors driving damage costs
-Linear Regression Model
+## Explore factors driving hurricane damage costs
+
+**Linear Regression Model**
+
+This model will include `max wind speed`, `rainfall`, `time`, and `number of places affected` as predictor variables for storm damage costs (in millions of USD).
+
+**explain why?**
+
 ```{r}
 #| code-summary: Expand Code
 # Create the model
-damage_model <- lm(damage_mil ~ highest_wind_speed + rain_inch + year + total_areas, data = hurricane_data_cleaned)
+damage_model <- lm(damage_mil ~ highest_wind_speed + rain_inch + time + total_areas, data = hurricane_data_cleaned)
 summary(damage_model)
 ```
 
 ### 1. Max Wind Speed
-Quantify uncertainty:
 ```{r}
 #| code-summary: Expand Code
 # Distribution of Beta1
@@ -253,7 +295,10 @@ tibble(beta1 = seq(-(beta1_estimate + beta1_se),
   # Visualize
   ggplot(aes(beta1, density)) +
   geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta1_estimate, color = "firebrick")
+  geom_vline(xintercept = beta1_estimate, color = "firebrick") +
+  labs(x = "Beta 1",
+       y = "Density") +
+  theme_minimal()
 ```
 
 Calculate the probability of the point estimate under the null:
@@ -261,11 +306,10 @@ Calculate the probability of the point estimate under the null:
 #| code-summary: Expand Code
 # p-value for Beta1
 pval_beta1 <- 2 * pnorm(-abs(beta1_estimate), mean = 0, sd = beta1_se)
-print(paste0("The p-value for beta 1 is: ", pval_beta1, "."))
+print(paste0("The p-value for Beta 1 is: ", pval_beta1, "."))
 ```
 
 ### 2. Rainfall
-Quantify uncertainty:
 ```{r}
 #| code-summary: Expand Code
 # Distribution of Beta2
@@ -279,7 +323,10 @@ tibble(beta2 = seq(-(beta2_estimate + beta2_se),
        density = dnorm(beta2, mean = 0, sd = beta2_se)) %>% 
   ggplot(aes(beta2, density)) +
   geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta2_estimate, color = "firebrick")
+  geom_vline(xintercept = beta2_estimate, color = "firebrick") +
+  labs(x = "Beta 2",
+       y = "Density") +
+  theme_minimal()
 ```
 
 Calculate the probability of the point estimate under the null:
@@ -287,14 +334,10 @@ Calculate the probability of the point estimate under the null:
 #| code-summary: Expand Code
 # p-value for Beta1
 pval_beta2 <- 2 * pnorm(-abs(beta2_estimate), mean = 0, sd = beta2_se)
-print(paste0("The p-value for beta 2 is: ", pval_beta2, "."))
+print(paste0("The p-value for Beta 2 is: ", pval_beta2, "."))
 ```
-Our p-value is less than 0.05, so we reject the null and interpret our model to say that it is possible rainfall has an effect on storm damage costs.
-
-**While we can't accept the alternative hypothesis, we don't rule it out as we do the null hypothesis.**
 
 ### 3. Time
-Quantify uncertainty:
 ```{r}
 #| code-summary: Expand Code
 # Distribution of Beta3
@@ -308,7 +351,10 @@ tibble(beta3 = seq(-(beta3_estimate + beta3_se),
        density = dnorm(beta3, mean = 0, sd = beta3_se)) %>% 
   ggplot(aes(beta3, density)) +
   geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta3_estimate, color = "firebrick")
+  geom_vline(xintercept = beta3_estimate, color = "firebrick") +
+  labs(x = "Beta 3",
+       y = "Density") +
+  theme_minimal()
 ```
 
 Calculate the probability of the point estimate under the null:
@@ -316,11 +362,11 @@ Calculate the probability of the point estimate under the null:
 #| code-summary: Expand Code
 # p-value for Beta3
 pval_beta3 <- 2 * pnorm(-abs(beta3_estimate), mean = 0, sd = beta3_se)
-print(paste0("The p-value for beta 3 is: ", pval_beta3, "."))
+print(paste0("The p-value for Beta 3 is: ", pval_beta3, "."))
 ```
+Our p-value is less than 0.05, so we **reject** the null and interpret our model to say that it is possible rainfall has an effect on storm damage costs. While we can't accept the alternative hypothesis, we don't rule it out as we do the null hypothesis.
 
 ### 4. Number of Places Affected
-Quantify uncertainty:
 ```{r}
 #| code-summary: Expand Code
 # Distribution of Beta4
@@ -334,7 +380,10 @@ tibble(beta4 = seq(-(beta4_estimate + beta4_se),
        density = dnorm(beta4, mean = 0, sd = beta4_se)) %>% 
   ggplot(aes(beta4, density)) +
   geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta4_estimate, color = "firebrick")
+  geom_vline(xintercept = beta4_estimate, color = "firebrick") +
+  labs(x = "Beta 4",
+       y = "Density") +
+  theme_minimal()
 ```
 
 Calculate the probability of the point estimate under the null:
@@ -342,11 +391,10 @@ Calculate the probability of the point estimate under the null:
 #| code-summary: Expand Code
 # p-value for Beta4
 pval_beta4 <- 2 * pnorm(-abs(beta4_estimate), mean = 0, sd = beta4_se)
-print(paste0("The p-value for beta 4 is: ", pval_beta4, "."))
+print(paste0("The p-value for Beta 4 is: ", pval_beta4, "."))
 ```
 
 ## Plots
-Wind:
 ```{r}
 #| code-summary: Expand Code
 wind <- ggplot(hurricane_data_cleaned, aes(x = highest_wind_speed, y = damage_mil)) +
@@ -362,7 +410,6 @@ wind <- ggplot(hurricane_data_cleaned, aes(x = highest_wind_speed, y = damage_mi
 wind
 ```
 
-Rainfall:
 ```{r}
 #| code-summary: Expand Code
 rain <- ggplot(hurricane_data_cleaned, aes(x = rain_inch, y = damage_mil)) +
@@ -410,6 +457,18 @@ places <- ggplot(hurricane_data_cleaned, aes(x = total_areas, y = damage_mil)) +
 places
 ```
 
+Why might this be?
+```{r}
+#| code-summary: Expand Code
+# Cost of damage by category
+ggplot(hurricane_data_cleaned, aes(x = factor(category, levels = c("TS", "Category 1", "Category 2", "Category 3", "Category 4", "Category 5"), labels = c("TS", "1", "2", "3", "4", "5")), y = rain_inch)) +
+  geom_boxplot() +
+  labs(x = "Catetory",
+       y = "Rainfall (in)",
+       title = "Rainfall (in) by Category 2000-2023") +
+  theme_minimal()
+```
+
 ## Log Damage 
 
 Since damage costs span a wide range (up to $125,000,000,000), and violate the normality assumption, we will run the analysis on the log of damage to reduce the distance between some of these extreme points. 
@@ -419,12 +478,13 @@ Linear Regression Model
 ```{r}
 #| code-summary: Expand Code
 # Create the model
-log_damage_model <- lm(log(damage_mil) ~ highest_wind_speed + rain_inch + year + total_areas, data = hurricane_data_cleaned)
+log_damage_model <- lm(log(damage_mil) ~ highest_wind_speed + rain_inch + time + total_areas, data = hurricane_data_cleaned)
 summary(log_damage_model)
 ```
 
 Our damage cost data is right-skewed. Adding a log transformation makes these data more symmetric. To see if the log damage model is a better fit, we can use a Scale-Location[^3] plot to observe the residuals.  
 ```{r}
+#| code-summary: Expand Code
 # Original model
 hist(hurricane_data_cleaned$damage_usd)
 plot(damage_model, which = 3) 
@@ -580,7 +640,7 @@ log_rain + rain
 Time:
 ```{r}
 #| code-summary: Expand Code
-log_time <- ggplot(hurricane_data_cleaned, aes(x = year, y = log(damage_mil))) +
+log_time <- ggplot(hurricane_data_cleaned, aes(x = time, y = log(damage_mil))) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   # geom_abline(intercept = coef(damage_model)[1],
@@ -609,8 +669,74 @@ log_places <- ggplot(hurricane_data_cleaned, aes(x = total_areas, y = log(damage
 log_places + places
 ```
 
+CI for log of damage?
+Damage ~ Time Linear Regression
+```{r}
+#| code-summary: Expand Code
+time_model <- lm(damage_mil ~ time, data = hurricane_data_cleaned)
+summary(time_model)
+```
+
+## Confidence Interval
+Investigate the `time` variable:
+```{r}
+#| code-summary: Expand Code
+# Histogram of time data
+ggplot(hurricane_data_cleaned, aes(time)) +
+  geom_histogram(bins = round(sqrt(length(hurricane_data_cleaned$time))), # set number of bins
+                 fill = "steelblue", 
+                 color = "black") +
+  labs(x= "Years Since 2000",
+       y = "Count",
+       title = "Distribution of Time Data") +
+  theme_minimal()
+```
+
+Simulate the population:
+```{r}
+#| code-summary: Expand Code
+# Extract our estimates for beta0, beta1, and sigma 
+beta0_estimate <- summary(time_model)$coefficients[1,1]
+beta1_estimate <- summary(time_model)$coefficients[2,1]
+sigma <- summary(time_model)$sigma
+time_damage_pop <- tibble(
+  # Predictor (uniformly distributed)
+  time = runif(1e4, 
+              min(hurricane_data_cleaned$time),
+              max(hurricane_data_cleaned$time)),
+  # Mean response
+  mean_damage_mil = beta0_estimate + beta1_estimate * time,
+  # Simulated response (mean and standard deviation accounted for)
+  damage_mil = rnorm(1e4, mean = mean_damage_mil, sd = sigma)
+)
+
+# Visualize
+ggplot(time_damage_pop, aes(time, damage_mil)) +
+  geom_point(shape = 21)
+```
+
+```{r}
+#| code-summary: Expand Code
+# Draw a sample
+time_damage_sample <- sample_n(time_damage_pop, 21)
+# Calculate the point estimate and standard error
+sample_lm <- lm(damage_mil ~ time, time_damage_pop)
+pe <- summary(time_model)$coefficients[2, 1]
+se <- summary(time_model)$coefficients[2, 2]
+# Construct the confidence interval
+sample_ci <- c(point_estimate = pe,
+               ci95_lower = pe - 1.96 * se,
+               ci95_upper = pe + 1.96 * se)
+
+print(paste("With 95% certainty, the time coefficient would fall in the interval:", sample_ci[2], "to", sample_ci[3]))
+```
+
+
+
 A few factors are not considered in these models:
 
 - inflation
 - storm surge
 - water temperature
+
+The dataset isn't the best (no original source or thorough descriptions of variables)
