@@ -8,3 +8,5 @@ eds222-final-project.rmarkdown
 .DS_Store
 eds222-final-project_files/
 graphs/
+eds222-final-project.qmd
+eds222-final-project.html
