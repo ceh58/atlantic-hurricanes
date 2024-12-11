@@ -268,7 +268,7 @@ areas_damage <- ggplot(hurricane_data_cleaned, aes(x = total_areas, y = log(dama
   geom_point() +
   labs(x = "Number of Places Affected",
        y = "Log of Damage",
-       title = "Log of Damage Costs vs. Number of Places Affected") +
+       title = "Log of Damage Costs vs. Places") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
   theme_minimal()
 
@@ -286,8 +286,6 @@ wind_damage + rain_damage + areas_damage + time_damage
 
 # Analysis
 
-## Multiple Regression Model
-
 We will be testing my hypothesis by normal approximation of the regression coefficient for `time`. In addition to `time`, we must include all relevant predictor variables in our model to reduce the risk of omitted variable bias.
 
 We will use forward selection to assess which of the following predictor variables to include in our model of log(`damage costs`):
@@ -303,7 +301,7 @@ print(paste("Predict damage from wind:", summary(lm(log(damage_mil)~highest_wind
 
 print(paste("Predict damage from rain:", summary(lm(log(damage_mil)~rain_inch, data = hurricane_data_cleaned))$adj.r.squared))
 
-print(paste("Predice damage from time:", summary(lm(log(damage_mil)~time, data = hurricane_data_cleaned))$adj.r.squared))
+print(paste("Predict damage from time:", summary(lm(log(damage_mil)~time, data = hurricane_data_cleaned))$adj.r.squared))
 
 print(paste("Predict damage from number of places:", summary(lm(log(damage_mil)~total_areas, data = hurricane_data_cleaned))$adj.r.squared))
 ```
@@ -426,20 +424,19 @@ pval_beta3 <- 2 * pnorm(-abs(beta3_estimate), mean = 0, sd = beta3_se)
 print(paste0("The p-value for Beta 3 is: ", pval_beta3, "."))
 ```
 
-
 ## Conclusions
 
-I found that, of my original considerations for predictor variables, `max wind speed`, `rainfall`, and `time` were the best predictors for `damage costs`. The `number of places affected` did not prove to be beneficial to add to the model.
+I found that, out of my original considerations for predictor variables, `max wind speed`, `rainfall`, and `number of places` were the best predictors for log(`damage costs`). The `time` predictor did not prove to enhance the model, and thus I failed to test my hypothesis. 
 
-I also found that the p-value for Beta 3 (`time`) was > $alpha = 0.05$ for both models. Thus, we fail to reject the null hypothesis. Remember:
+However, I did find that the p-values for all Betas were < $alpha = 0.05$. While we cannot confirm that log(`damage costs`) are affected by `max wind speed`, `rainfall`, and `number of places affected`, we can rule out that their influence is due to random chance. Thus, we reject the null hypotheses associated with these predictor variables as follows:
 
-- H0: Time has no effect on storm damage costs.
+- H0: Max wind speed has no effect on storm damage costs.
+- H0: Rainfall has no effect on storm damage costs.
+- H0: Number of places has no effect on storm damage costs.
 
-So, to conclude, we could not rule out that the effect of `time` on `damage costs` could be due to random chance. 
+So, to conclude, I could not rule out that the effect of `time` on `damage costs` could be due to random chance. 
 
-A few factors are not considered in these models:
-
-- cost of inflation
+There are a few factors are not considered in these models, such as the effects of inflation. There is likely an interaction between time and inflation, 
 
 Additional predictor variables that would be of interest:
 
@@ -450,7 +447,8 @@ Additional predictor variables that would be of interest:
 
 Given more time, I would have been interested in compiling a better dataset. The dataset used in this analysis isn't the best (no original source or thorough descriptions of variables i.e. rainfall?).
 
-
 https://www.ncei.noaa.gov/access/billions/
 
+# References
 
+https://stock.adobe.com/search/images?k=hurricane
