@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Carmen Hoyt">
-<meta name="dcterms.date" content="2024-12-11">
+<meta name="dcterms.date" content="2024-12-12">
 
 <title>Hurricanes in the Atlantic</title>
 <style>
@@ -130,7 +130,9 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#extract-p-values" id="toc-extract-p-values" class="nav-link" data-scroll-target="#extract-p-values">Extract p-values</a></li>
   </ul></li>
-  <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions">Conclusions</a></li>
+  </ul></li>
+  <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions">Conclusions</a>
+  <ul class="collapse">
   <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps">Next steps</a></li>
   </ul></li>
   <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references">References</a></li>
@@ -159,7 +161,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 11, 2024</p>
+      <p class="date">December 12, 2024</p>
     </div>
   </div>
   
@@ -173,9 +175,7 @@ window.Quarto = {
 
 <section id="about" class="level1">
 <h1>About</h1>
-<p>Growing up on the Gulf Coast of Florida, my family and I were no stranger to hurricanes. We have lived in the same house for over 20 years, but recent hurricane seasons<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> have brought an increase in flooding and severe damage. For example, Hurricane Ian (2022) stands out as having been the worst storm to hit our neighborhood during my lifetime, bringing an unprecedented 7 feet of storm surge into our home.</p>
-<p>Climate change is influencing natural disasters across the board, and hurricanes are no exception. While the frequency of storms is not projected to change, they are predicted to become more intense<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Hurricane “intensity” is measured in categories on the Saffir-Simpson scale: 1 through 5 based on wind speed<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. Storms assigned a category 3 or higher are considered “major hurricanes” and are expected to bring catastrophic damage (and thus more significant damage costs). This leads to my question:</p>
-<p><strong>As storms increase in intensity, are damage costs also being driven by time?</strong></p>
+<p>An assessment of the factors driving the costs of hurricane damage.</p>
 </section>
 <section id="data" class="level1">
 <h1>Data</h1>
@@ -691,43 +691,30 @@ F-statistic: 8.057 on 4 and 106 DF,  p-value: 0.00001036</code></pre>
 </div>
 </section>
 </section>
-<section id="conclusions" class="level2">
-<h2 class="anchored" data-anchor-id="conclusions">Conclusions</h2>
-<p>I found that the p-values for Beta 1 (<code>hightest_wind_speed</code>) and Beta 2 (<code>rain_inch</code>) were less than <span class="math inline">\(alpha=0.05\)</span>.</p>
-<p>Beta 3 (<code>total_areas</code>) and Beta 4 (<code>time</code>) were greater than <span class="math inline">\(alpha=0.05\)</span>.</p>
-<p>While we cannot confirm that damage costs are affected by wind speed or rainfall, we can rule out that their influence is due to random chance.</p>
-<p>As for time, we failed to reject the null hypothesis:</p>
+</section>
+<section id="conclusions" class="level1">
+<h1>Conclusions</h1>
+<p>I found that the p-values for <span class="math inline">\(\beta_1\)</span> (<code>hightest_wind_speed</code>) and <span class="math inline">\(\beta_2\)</span> (<code>rain_inch</code>) were less than the standard <span class="math inline">\(alpha=0.05\)</span>. While we cannot confirm that damage costs are affected by max wind speed and rainfall, we can rule out that their influence is due to random chance.</p>
+<p>However, to answer my initial question, we must look at <span class="math inline">\(\beta_4\)</span>. Both <span class="math inline">\(\beta_3\)</span> (<code>total_areas</code>) and <span class="math inline">\(\beta_4\)</span> (<code>time</code>) were greater than <span class="math inline">\(alpha=0.05\)</span>. We cannot rule out that the influence of <code>total_areas</code> and <code>time</code> are due to random chance. So, we fail to reject the null hypothesis:</p>
 <ul>
 <li>H0: Time has no effect on storm damage costs.</li>
 </ul>
-<p>So, to conclude, I could not rule out that the effect of <code>time</code> on <code>damage_mil</code> could be due to random chance.</p>
-<p>There are a few factors are not considered in these models, such as the effects of inflation. There is likely an interaction between time and inflation,</p>
-<p>Additional predictor variables that would be of interest:</p>
-<ul>
-<li>storm surge</li>
-<li>water temperature</li>
-</ul>
-</section>
+<p>There are more than a few limitations to this analysis. First and foremost, the clean dataset only includes 111 observations from a 23-year time period. It would be ideal to have more observations from a longer time range to truly asses how damage costs have changed over time. In addition to a limited time range, it was not clear the source of the data and how particular variables were calculated. For example, what determined whether or not a place was named in the list of <code>areas_affected</code>? How was total rainfall in <code>rain_inch</code> calculated? What do the damage cost estimates consider?</p>
+<p>I also think there is omitted variable bias for inflation. It is very possible that damage costs could be primarily driven by the rising costs of building materials or the real estate market.</p>
+<p>According to the literature, variables such as storm surge and water temperature would be interesting predictors to include in the model, as they are expected to increase with storm intensity. Storm surge is also COSTLY.</p>
 <section id="next-steps" class="level2">
 <h2 class="anchored" data-anchor-id="next-steps">Next steps</h2>
-<p>Given more time, I would have been interested in compiling a better dataset. The dataset used in this analysis isn’t the best (no original source or thorough descriptions of variables i.e.&nbsp;rainfall?).</p>
-<p>https://www.ncei.noaa.gov/access/billions/</p>
+<p>Given more time, I would have liked to dive into how gamma regression could have better modeled damage costs. Gamma regressions are typically used to model positive, continuous data that is right-skewed, such as <code>damage_mil</code>. For example, in the last model visualizations, you can see how some of the predictions dip below $0, and we know that having negative damage costs is not possible.</p>
+<p>Just for fun, check out this <a href="https://www.ncei.noaa.gov/access/billions/">Billion-Dollar Weather and Climate Disasters Dashboard</a>.</p>
 </section>
 </section>
 <section id="references" class="level1">
 <h1>References</h1>
-<p>https://stock.adobe.com/search/images?k=hurricane</p>
+<p>Adobe Stock. (n.d.). Hurricane [Photograph]. Adobe Stock. https://stock.adobe.com/search/images?k=hurricane</p>
+<p>NASA. (2021, October 7). A force of nature: Hurricanes in a changing climate. NASA. https://science.nasa.gov/earth/climate-change/a-force-of-nature-hurricanes-in-a-changing-climate/</p>
 </section>
 
-
-<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
-
-<ol>
-<li id="fn1"><p>Hurricane season runs June 1 to November 30, but since 2021, the <a href="https://www.accuweather.com/en/hurricane/nhc-considering-change-to-start-date-of-hurricane-season/1168271">National Hurricane Center (NHC) has considered moving the start date to May 15</a> to encompass increasing early-season activity.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p>Read more about how hurricanes are expected to evolve with climate change <a href="https://science.nasa.gov/earth/climate-change/a-force-of-nature-hurricanes-in-a-changing-climate/">here</a>.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p>Read more about the Saffir-Simpson scale <a href="https://www.weather.gov/mfl/saffirsimpson#:~:text=The%20Saffir%2DSimpson%20Hurricane%20Wind,loss%20of%20life%20and%20damage.">here</a>.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-</ol>
-</section></div></main>
+</main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
