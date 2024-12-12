@@ -30,7 +30,7 @@ Climate change is influencing natural disasters across the board, and hurricanes
 
 # Data
 
-I will be using Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/datasets/middlehigh/north-american-hurricanes-from-2000) dataset to develop a model of the factors driving `damage costs`. Of these factors:
+I will be using Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/datasets/middlehigh/north-american-hurricanes-from-2000) dataset to develop a model of the factors driving damage costs. Of these factors:
 
 **I predict that time has an effect on damage costs (increasing over time).**
 
@@ -64,7 +64,7 @@ hurricane_data <- read_csv(here("data", "Hurricane Data.csv")) %>%
 
 ### Inspect NA values for the response variable
 
-How are the NA values for `damage costs` distributed across hurricane categories?
+How are the NA values for `damage_usd` distributed across hurricane categories?
 ```{r}
 #| code-summary: Expand Code
 # Total storms by category
@@ -93,7 +93,7 @@ na_table <- left_join(total_storms, na_storms, by = "Category") %>%
 
 na_table
 ```
-Since NA values are somewhat proportionally distributed, it appears that removing them will not have an impact on the analysis. Additionally, I will scale `damage costs` to be represented by "Millions of USD", saved as `damage_mil`.
+Since NA values are somewhat proportionally distributed, it appears that removing them will not have an impact on the analysis. Additionally, I will scale `damage_usd` to be represented by "Millions of USD", saved as `damage_mil`.
 
 ```{r}
 #| code-summary: Expand Code
@@ -137,61 +137,9 @@ mean_median <- hurricane_data_cleaned %>%
 mean_median
 ```
 
-The `damage costs` data appear to be right-skewed across most hurricane categories (with the exception of category 2). Mean damage costs are higher than median damage costs due to more weight/outliers on the right tail (high end) of the observations. Let's take a closer look at the `damage costs` data. We may want to log-transform these data to make them more "normal". 
-
-
-
-```{r}
-#| code-summary: Expand Code
-# Histogram of damage costs
-hist_original <- ggplot(hurricane_data_cleaned, aes(damage_mil)) +
-  geom_histogram(bins = round(sqrt(length(hurricane_data_cleaned$damage_mil))), # set number of bins
-                 fill = "cornflowerblue", 
-                 color = "black") +
-  labs(x= "Damage Costs (Millions of USD)",
-       y = "Count",
-       #title = "Distribution of Damage Cost Data"
-       ) +
-  theme_minimal()
-
-# Histogram of log damage costs
-hist_log <- ggplot(hurricane_data_cleaned, aes(log(damage_mil))) +
-  geom_histogram(bins = round(sqrt(length(log(hurricane_data_cleaned$damage_mil)))), # set number of bins
-                 fill = "cornflowerblue", 
-                 color = "black") +
-  labs(x= "Log Damage Costs (Millions of USD)",
-       y = "Count",
-       #title = "Distribution of Log Damage Cost Data"
-       ) +
-  theme_minimal()
-
-hist_original + hist_log
-```
-
-Using `geom_qq_line()`, we can draw a line indicating where the sample quantiles would lie if the data were normally distributed to assess our log transformation.
-
-```{r}
-#| code-summary: Expand Code
-qq_original <- ggplot(hurricane_data_cleaned, aes(sample = damage_mil)) +
-  geom_qq(color = "cornflowerblue") +
-  geom_qq_line() +
-  labs(title = "Damage Costs (Millions of USD)") +
-  theme_minimal()
-
-qq_log <- ggplot(hurricane_data_cleaned, aes(sample = log(damage_mil))) +
-  geom_qq(color = "cornflowerblue") +
-  geom_qq_line() +
-  labs(title = "Log of Damage Costs (Millions of USD)") +
-  theme_minimal()
-
-qq_original / qq_log
-```
-
-The log transformed data fit much closer to a normal distribution. 
-
 # Visualize
 
-Since category 5 storms include wind speeds of 157+ mph, it is possible that increasing log(`damage costs`) are associated with an increasing number of category 5 storms. The open-ended category will amass more storms as `max wind speeds` are expected to increase over time.
+Since category 5 storms include wind speeds of 157+ mph, it is possible that increasing `damage_mil` are associated with an increasing number of category 5 storms. The open-ended category will amass more storms as wind speed (`highest_wind_speed`) is expected to increase over time.
 
 ```{r}
 #| code-summary: Expand Code
@@ -211,7 +159,7 @@ ggplot(hurricane_data_cleaned, aes(x = year, y = highest_wind_speed)) +
 
 You can see how the time period 2000-2014 had 2 category 5 storms while the time period 2015-2023 has 8. 
 
-Since rainfall is also expected to increase with climate change, we might want to include it in our model.
+Since rainfall is also expected to increase with climate change, we might want to include `rain_inch` it in our model.
 
 ```{r}
 #| code-summary: Expand Code
@@ -226,7 +174,7 @@ ggplot(hurricane_data_cleaned, aes(x = year, y = rain_inch)) +
   theme_minimal()
 ```
 
-The last factor that may be playing a role in log(`damage costs`) is the `number of places affected`, calculated by counting how many "areas" are listed in the `areas_affected` column from the original dataset. As storms increase in intensity, I would expect that they will impact more places over time; however, we see that this may not be the case. We will still explore a potential relationship between `number of places affected` and log(`damage costs`).
+The last factor that may be playing a role in `damage_mil` is the number of places affected (`total_areas`), calculated by counting how many "areas" are listed in the `areas_affected` column from the original dataset. As storms increase in intensity, I would expect that they will impact more places over time; however, we see that this may not be the case. We will still explore a potential relationship between `total_areas` and `damage costs`.
 
 ```{r}
 #| code-summary: Expand Code
@@ -241,25 +189,25 @@ ggplot(hurricane_data_cleaned, aes(x = year, y = total_areas)) +
   theme_minimal()
 ```
 
-`max wind speed`, `rainfall`, `number of places affected`, and `time` are interesting factors that are likely driving log(`damage costs`). Let's visualize their individual relationships with log(`damage costs`).
+Max wind speed, rainfall, number of areas affected, and time are interesting factors that are likely driving damage costs. Let's visualize their individual relationships with damage costs.
 
 ```{r}
 #| code-summary: Expand Code
 #| message: false
 # Rainfall over time
-wind_damage <- ggplot(hurricane_data_cleaned, aes(x = highest_wind_speed, y = log(damage_mil))) +
+wind_damage <- ggplot(hurricane_data_cleaned, aes(x = highest_wind_speed, y = damage_mil)) +
   geom_point() +
-  labs(x = "Max Wind Speed",
-       y = "Log of Damage",
-       title = "Log of Damage Costs vs. Wind") +
+  labs(x = "Max Wind Speed (mph)",
+       y = "Damage Costs",
+       title = "Damage Costs vs. Wind") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
   theme_minimal()
 
-rain_damage <- ggplot(hurricane_data_cleaned, aes(x = rain_inch, y = log(damage_mil))) +
+rain_damage <- ggplot(hurricane_data_cleaned, aes(x = rain_inch, y = damage_mil)) +
   geom_point() +
   labs(x = "Rainfall (in)",
-       y = "Log of Damage",
-       title = "Log of Damage Costs vs. Rainfall") +
+       y = "Damage Costs",
+       title = "Damage Costs vs. Rainfall") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
   theme_minimal()
 
@@ -267,17 +215,17 @@ rain_damage <- ggplot(hurricane_data_cleaned, aes(x = rain_inch, y = log(damage_
 areas_damage <- ggplot(hurricane_data_cleaned, aes(x = total_areas, y = log(damage_mil))) +
   geom_point() +
   labs(x = "Number of Places Affected",
-       y = "Log of Damage",
-       title = "Log of Damage Costs vs. Places") +
+       y = "Damage Costs",
+       title = "Damage Costs vs. Places") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
   theme_minimal()
 
 # Damage costs over time
 time_damage <- ggplot(hurricane_data_cleaned, aes(x = time, y = log(damage_mil))) +
   geom_point() +
-  labs(x = "Time (Years since 2000",
-       y = "Log of Damage",
-       title = "Log of Damage vs. Time") +
+  labs(x = "Time (Years since 2000)",
+       y = "Damage Costs",
+       title = "Damage Costs vs. Time") +
   geom_smooth(method = "lm", se = FALSE, linewidth = 1) +
   theme_minimal()
 
@@ -286,155 +234,126 @@ wind_damage + rain_damage + areas_damage + time_damage
 
 # Analysis
 
-We will be testing my hypothesis by normal approximation of the regression coefficient for `time`. In addition to `time`, we must include all relevant predictor variables in our model to reduce the risk of omitted variable bias.
+We will be testing my hypothesis by normal approximation of the regression coefficient for `time`. In addition to `time`, we must include all relevant predictor variables in our model to reduce the risk of omitted variable bias:
 
-We will use forward selection to assess which of the following predictor variables to include in our model of log(`damage costs`):
-
-- `max wind speed`: highest wind speed achieved by the storm (mph)
-- `rainfall`: rain that fell (inches)
+- `highest_wind_speed`: highest wind speed achieved by the storm (mph)
+- `rain_inch`: rain that fell (inches)
+- `total_areas`: a count of the number of places listed in `areas affected`
 - `time`: years since 2000
-- `number of palces affected`: a count of the number of places listed in `areas affected`
-
-```{r}
-#| code-summary: Expand Code
-print(paste("Predict damage from wind:", summary(lm(log(damage_mil)~highest_wind_speed, data = hurricane_data_cleaned))$adj.r.squared))
-
-print(paste("Predict damage from rain:", summary(lm(log(damage_mil)~rain_inch, data = hurricane_data_cleaned))$adj.r.squared))
-
-print(paste("Predict damage from time:", summary(lm(log(damage_mil)~time, data = hurricane_data_cleaned))$adj.r.squared))
-
-print(paste("Predict damage from number of places:", summary(lm(log(damage_mil)~total_areas, data = hurricane_data_cleaned))$adj.r.squared))
-```
-Log(`damage costs`) predictions from `max wind speed` yielded the highest adjusted R2 value. So, we will start with `max wind speed`.
-
-```{r}
-#| code-summary: Expand Code
-print(paste("Precit damage from wind and rain:", summary(lm(log(damage_mil)~ highest_wind_speed + rain_inch, data = hurricane_data_cleaned))$adj.r.squared))
-
-print(paste("Predict damage from wind and time:", summary(lm(log(damage_mil)~ highest_wind_speed + time, data = hurricane_data_cleaned))$adj.r.squared))
-
-print(paste("Predict damage from wind and number of places:", summary(lm(log(damage_mil)~ highest_wind_speed + total_areas, data = hurricane_data_cleaned))$adj.r.squared))
-```
-Next, we will add `rainfall` since the adjusted R2 increased from 0.276673 to 0.344091.
-
-```{r}
-#| code-summary: Expand Code
-print(paste("Predict damage from wind, rain, and time:", summary(lm(log(damage_mil)~ highest_wind_speed + rain_inch + time, data = hurricane_data_cleaned))$adj.r.squared))
-
-print(paste("Predict damage from wind, rain, and number of places:", summary(lm(log(damage_mil)~ highest_wind_speed + rain_inch + total_areas, data = hurricane_data_cleaned))$adj.r.squared))
-```
-Third, we will add `number of places affected` since the adjusted R2 increased from 0.344091 to 0.376580.
-
-```{r}
-#| code-summary: Expand Code
-print(paste("Predict damage from wind, rain, number of places, and time:", summary(lm(log(damage_mil)~ highest_wind_speed + rain_inch + time + total_areas, data = hurricane_data_cleaned))$adj.r.squared))
-```
-Finally, we will **not** include `time` since it did not increase the adjusted R2 from the previous baseline of 0.376580. 
 
 ## Multiple Regression Model
 ```{r}
 #| code-summary: Expand Code
 # Create the model
-log_damage_model <- lm(log(damage_mil) ~ highest_wind_speed + rain_inch + total_areas, data = hurricane_data_cleaned)
-summary(log_damage_model)
+damage_model <- lm(damage_mil ~ highest_wind_speed + rain_inch + total_areas + time, data = hurricane_data_cleaned)
+summary(damage_model)
 ```
 
-### Beta 1: Max Wind Speed
+### Extract p-values
 ```{r}
 #| code-summary: Expand Code
-# Distribution of Beta1
-beta1_estimate <- summary(log_damage_model)$coefficients[2, 1]
-beta1_se <- summary(log_damage_model)$coefficients[2, 2]
+# p-values
+beta1_p <- summary(damage_model)$coefficients[2,4]
+beta2_p <- summary(damage_model)$coefficients[3,4]
+beta3_p <- summary(damage_model)$coefficients[4,4]
+beta4_p <- summary(damage_model)$coefficients[5,4]
 
-# Under null hypothesis
-tibble(beta1 = seq(-(beta1_estimate + beta1_se),
-                   beta1_estimate + beta1_se,
-                   length.out = 200),
-       density = dnorm(beta1, mean = 0, sd = beta1_se)) %>% 
-  # Visualize
-  ggplot(aes(beta1, density)) +
-  geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta1_estimate, color = "firebrick") +
-  labs(x = "Beta 1",
-       y = "Density") +
-  theme_minimal()
+beta <- c(beta1_p, beta2_p, beta3_p, beta4_p)
+
+# Print p-values
+for (i in seq_along(beta)) {
+  print(paste0("The p-value for Beta ", i, " is ", beta[i], "."))
+}
 ```
 
-Calculate the probability of the point estimate under the null:
+Now, let's visualize these relationships. Using mean rainfall and mean number of places affected, we can look at the relationship between time and damage costs by wind speed. 
 ```{r}
 #| code-summary: Expand Code
-# p-value for Beta1
-pval_beta1 <- 2 * pnorm(-abs(beta1_estimate), mean = 0, sd = beta1_se)
-print(paste0("The p-value for Beta 1 is: ", pval_beta1, "."))
+# Update model
+predictions <- expand_grid(
+  highest_wind_speed = c(74, 96, 111, 130, 157),
+  rain_inch = mean(hurricane_data_cleaned$rain_inch),
+  total_areas = mean(hurricane_data_cleaned$total_areas),
+  time = seq(0, 23, length.out = 100)) %>%
+  mutate(damage_predicted = predict(damage_model, 
+                                      newdata = .,
+                                      type = "response"))
+
+#Visualize
+ggplot(predictions, aes(time, damage_predicted, color = factor(highest_wind_speed))) +
+  geom_line() +
+  scale_color_brewer(palette = "Reds",
+                     name ="Wind Speed (mph)",
+                   labels = c("74 (Cat 1)", "96 (Cat 2)", "111 (Cat 3)", "130 (Cat 4)", "157 (Cat 5)")) +
+   labs(x = "Years Since 2000",
+       y = "Predicted Damage Costs (Millions of USD)",
+       title = "Predicted Damage Costs over Time by Wind Speed") +
+  theme_bw()
 ```
 
-### Beta 2: Rainfall
 ```{r}
 #| code-summary: Expand Code
-# Distribution of Beta2
-beta2_estimate <- summary(log_damage_model)$coefficients[3, 1]
-beta2_se <- summary(log_damage_model)$coefficients[3, 2]
+# Update model
+predictions3 <- expand_grid(
+  highest_wind_speed = mean(hurricane_data_cleaned$highest_wind_speed),
+  rain_inch = c(quantile(hurricane_data_cleaned$rain_inch)[2],
+                   quantile(hurricane_data_cleaned$rain_inch)[3],
+                   quantile(hurricane_data_cleaned$rain_inch)[4]),
+  total_areas = mean(hurricane_data_cleaned$total_areas),
+  time = seq(0, 23, length.out = 100)) %>%
+  mutate(damage_predicted = predict(damage_model, 
+                                      newdata = .,
+                                      type = "response"))
 
 # Visualize
-tibble(beta2 = seq(-(beta2_estimate + beta2_se),
-                   beta2_estimate + beta2_se,
-                   length.out = 200),
-       density = dnorm(beta2, mean = 0, sd = beta2_se)) %>% 
-  ggplot(aes(beta2, density)) +
-  geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta2_estimate, color = "firebrick") +
-  labs(x = "Beta 2",
-       y = "Density") +
-  theme_minimal()
+ggplot(predictions3, aes(time, damage_predicted, color = factor(rain_inch))) +
+  geom_line() +
+  scale_color_brewer(palette = "Reds",
+                     name ="Rainfall (in)") +
+   labs(x = "Years Since 2000",
+       y = "Predicted Damage Costs (Millions of USD)",
+       title = "Predicted Damage Costs over Time by Rainfall Quantiles") +
+  theme_bw()
 ```
 
-Calculate the probability of the point estimate under the null:
 ```{r}
 #| code-summary: Expand Code
-# p-value for Beta1
-pval_beta2 <- 2 * pnorm(-abs(beta2_estimate), mean = 0, sd = beta2_se)
-print(paste0("The p-value for Beta 2 is: ", pval_beta2, "."))
-```
-
-### Beta 3: Number of Places Affected
-```{r}
-#| code-summary: Expand Code
-# Distribution of Beta2
-beta3_estimate <- summary(log_damage_model)$coefficients[4, 1]
-beta3_se <- summary(log_damage_model)$coefficients[4, 2]
+# Update model
+predictions4 <- expand_grid(
+  highest_wind_speed = mean(hurricane_data_cleaned$highest_wind_speed),
+  rain_inch = mean(hurricane_data_cleaned$rain_inch),
+  total_areas = seq(min(hurricane_data_cleaned$total_areas),
+                   max(hurricane_data_cleaned$total_areas),
+                   by = 5),
+  time = seq(0, 23, length.out = 100)) %>%
+  mutate(damage_predicted = predict(damage_model, 
+                                      newdata = .,
+                                      type = "response"))
 
 # Visualize
-tibble(beta3 = seq(-(beta3_estimate + beta3_se),
-                   beta3_estimate + beta3_se,
-                   length.out = 200),
-       density = dnorm(beta3, mean = 0, sd = beta3_se)) %>% 
-  ggplot(aes(beta3, density)) +
-  geom_line(color = "cornflowerblue") +
-  geom_vline(xintercept = beta2_estimate, color = "firebrick") +
-  labs(x = "Beta 3",
-       y = "Density") +
-  theme_minimal()
-```
-
-Calculate the probability of the point estimate under the null:
-```{r}
-#| code-summary: Expand Code
-# p-value for Beta1
-pval_beta3 <- 2 * pnorm(-abs(beta3_estimate), mean = 0, sd = beta3_se)
-print(paste0("The p-value for Beta 3 is: ", pval_beta3, "."))
+ggplot(predictions4, aes(time, damage_predicted, color = factor(total_areas))) +
+  geom_line() +
+  scale_color_brewer(palette = "Reds",
+                      name ="Number of Places") +
+   labs(x = "Years Since 2000",
+       y = "Predicted Damage Costs (Millions of USD)",
+       title = "Predicted Damage Costs over Time by Places") +
+  theme_bw()
 ```
 
 ## Conclusions
 
-I found that, out of my original considerations for predictor variables, `max wind speed`, `rainfall`, and `number of places` were the best predictors for log(`damage costs`). The `time` predictor did not prove to enhance the model, and thus I failed to test my hypothesis. 
+I found that the p-values for Beta 1 (`hightest_wind_speed`) and Beta 2 (`rain_inch`) were less than $alpha=0.05$.
 
-However, I did find that the p-values for all Betas were < $alpha = 0.05$. While we cannot confirm that log(`damage costs`) are affected by `max wind speed`, `rainfall`, and `number of places affected`, we can rule out that their influence is due to random chance. Thus, we reject the null hypotheses associated with these predictor variables as follows:
+Beta 3 (`total_areas`) and Beta 4 (`time`) were greater than $alpha=0.05$. 
 
-- H0: Max wind speed has no effect on storm damage costs.
-- H0: Rainfall has no effect on storm damage costs.
-- H0: Number of places has no effect on storm damage costs.
+While we cannot confirm that damage costs are affected by wind speed or rainfall, we can rule out that their influence is due to random chance. 
 
-So, to conclude, I could not rule out that the effect of `time` on `damage costs` could be due to random chance. 
+As for time, we failed to reject the null hypothesis: 
+
+- H0: Time has no effect on storm damage costs.
+
+So, to conclude, I could not rule out that the effect of `time` on `damage_mil` could be due to random chance. 
 
 There are a few factors are not considered in these models, such as the effects of inflation. There is likely an interaction between time and inflation, 
 
