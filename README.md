@@ -3,6 +3,8 @@ Author: Carmen Hoyt
 
 This repository hosts an assessment of the factors driving the costs of hurricane damage in the Atlantic (2000-2023). I build and use a multiple regression model for storm damage costs and visualize predictions by wind speed and rainfall, two factors expected to increase in severity under the influcence of climate change.
 
+Read more on my [blog](https://ceh58.github.io/posts/2024-12-10-atlantic-hurricanes/).
+
 ## Data 
 
 I used Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/datasets/middlehigh/north-american-hurricanes-from-2000) dataset to develop a model of the factors driving hurricane damage costs. It is included with this repository.
