@@ -15,7 +15,7 @@ I used Kaggle's [North American Hurricanes from 2000](https://www.kaggle.com/dat
 ├── README.md
 ├── atlantic-hurricanes.qmd
 ├── atlantic-hurricanes.html
-└── atlantic-hurricanes.Rproj
+└── eds222-final-project.Rproj
 ```
 The `atlantic-hurricanes.qmd` details the steps taken to conduct the analysis.
 
